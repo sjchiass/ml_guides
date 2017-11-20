@@ -1,0 +1,59 @@
+---
+title: "Supervised vs. Unsupervised Learning"
+output:
+  pdf_document: default
+  html_document: default
+urlcolor: blue
+---
+<!-- Find latest version at https://github.com/sjchiass/rlang_coursera -->
+## A review of week 1, lecture 1 in R
+
+### Further Reading
+
+- [ISLR videos: Supervised and Unsupervised Learning](https://www.youtube.com/watch?v=LvaTokhYnDw)
+- ISLR book section 2.1.4: Supervised Versus Unsupervised Learning
+
+### Supervised Learning
+
+In the early weeks Andrew Ng uses linear regression as an early example of supervised learning. If you want to practice it in R, an easy dataset to use is `cars`.
+
+You can learn more about the cars dataset by typing `?cars` into your R console. We will treat car `speed` as our independent variable (x) and stopping `dist` (distance) as our dependent (y) variable.
+
+```{r}
+head(cars) # Display first few records of a dataset
+summary(cars) # Display summary statistics of a dataset
+```
+
+If you want to run a linear regression on this data, the quickest way to do it in R is with the `lm()` function. This example saves the linear model to an object named `model` and draws the fitted line using the `abline()` function.
+
+```{r}
+model <- lm(dist ~ speed, cars) # Linear model, the intercept term is implicit
+plot(cars) # Draw a scatterplot, R guesses our x and y variables
+abline(model) # Use our model's coefficients to draw a line
+```
+
+### Unsupervised Learning
+
+Andrew Ng doesn't go into much detail about unsupervised learning, but he does show some graphs of datapoints being classified into clusters. We can use the `iris` dataset to demonstrate some basic clustering using the k-means algorithm.
+
+I can use the `str()` to give me information about the structure of the `iris` dataset.
+
+```{r}
+str(iris) # R's structure function
+```
+
+Below is a more complicated `plot()` function call where I give the function specific named inputs. I also use the `$` operator to select specific table columns by name.
+
+```{r}
+plot(x=iris$Sepal.Length, y=iris$Sepal.Width, col=iris$Species) # Colored scatterplot
+legend(6.25, 4.25, legend=unique(iris$Species), col=1:length(iris$Species), pch=1) # Also add a legend
+```
+
+The k-means algorithm is a simple algorithm whose basic idea is easy to grasp. It operates by looking at center-of-mass. Since we only give k-means the first two columns, those graphed above, it only ends up clumping points on that plane together.
+
+Since we did not give it a target or dependant variable, just some data, this is an unsupervised learning problem.
+
+```{r}
+kmeans <- kmeans(iris[, 1:2], 3) # Run the k-means algorithm
+plot(x=iris$Sepal.Length, y=iris$Sepal.Width, col=kmeans$cluster) # Plot the clusters
+```

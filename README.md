@@ -1,8 +1,3 @@
-# python_coursera
-A python port of the Andrew Ng course
+# ML Guides
 
-These should review concepts presented in the course, but present them in slightly different ways, to help the concepts "click".
-
-### Thanks
-
-Have fun!
+I'm going to start saving my various guides here. They require some clean-up before I can start linking them to anyone who needs help!

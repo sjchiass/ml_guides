@@ -1,0 +1,129 @@
+---
+title: "Multi-variable Linear Regression"
+output:
+  html_document: default
+  pdf_document: default
+urlcolor: blue
+---
+<!-- Find latest version at https://github.com/sjchiass/rlang_coursera -->
+## A review of week 2, lecture 4 in R
+
+### Further Reading
+- [ISLR videos: Multiple Linear Regression and Interpreting Regression Coefficients](https://www.youtube.com/watch?v=1hbCJyM9ccs)
+- ISLR book section 3.2: Multiple Linear Regression
+
+### Using the lm() Function
+
+We can test multiple linear regression using some simulated data.
+
+```{r}
+# This is how to declare an empty data.frame. Dataframes are R's way of storing data in tables.
+training_data=data.frame(
+    x0=numeric(), 
+    x1=numeric(), 
+    x2=numeric(), 
+    y=numeric()
+)
+# Generate fake data
+for(n in 1:250){
+    x0 <- 1
+    x1 <- runif(1, -1, 1)
+    x2 <- rnorm(1, -1, 1) + rnorm(1, -1, 1)^2
+    # The dependent variable y should give coefficients of 1, 2 and 3, respectively
+    y <- 1*x0 + 2*x1 + 3*x2 + rnorm(1, 0, 1)
+    # The rbind function adds a row to the bottom of our data.frame
+    # Use data.frame() on the new row to force it to use the proper names
+    training_data <- rbind(training_data, data.frame(x0=x0, x1=x1, x2=x2, y=y))
+}
+plot(training_data) # Plotting a data frame of more than two columns returns a grid of plots
+```
+
+The `lm()` function can be used for multi-variate OLS.
+
+```{r}
+model <- lm(y ~ x1 + x2, training_data)
+summary(model) # The summary function is a generic function that gives customized information about objects
+```
+
+### Using Gradient Descent and Matrices
+
+Assuming the matrix of data has a column of 1s for the intercept, the model's equation is 
+
+$$h(\theta) = X \theta$$
+
+The X data matrix has the dimensions $n.obs \times 3$ and the coefficient matrix $\theta$ has $3 \times 1$, or $in \times out$.
+
+With delta $\Delta$ being $h(\theta) - y$, 
+
+$$\frac{\partial J(\theta)}{\partial \theta} = X^T \Delta$$
+
+```{r}
+initial_theta <- matrix(rnorm(3), nrow=3) # This creates a vector of three rows
+training_matrix <- data.matrix(training_data) # Convert your data into a matrix before training
+
+# A gradient descent function
+gradient_descent <- function(learning_rate, number_of_epochs){
+    # Initialize some initial coefficients
+    theta <- initial_theta
+    # We're going to initialize histories of key values
+    theta_history <- theta
+    # Calculate initial cost
+    delta_initial <- training_matrix[,1:3] %*% theta - training_matrix[,4]
+    cost_history <- mean(0.5*delta_initial^2)
+    for(epoch in 1:number_of_epochs){
+        # Since we're using matrices, this code is now "vectorized"
+        delta <- training_matrix[,1:3] %*% theta - training_matrix[,4]
+        # The crossprod function handles the transpose and multiplication very quickly
+        theta <- theta - learning_rate/nrow(training_matrix)*crossprod(training_matrix[,1:3], delta)
+        theta_history <- c(theta_history, theta)
+        # Recalculate cost with new theta value
+        delta_new <- training_matrix[,1:3] %*% theta - training_matrix[,4]
+        cost_history <- c(cost_history, mean(0.5*delta_new^2))
+    }
+    # We've saved our theta values as one long vector, here is how to turn it into a matrix
+    theta_history <- matrix(theta_history, ncol=3, byrow=TRUE)
+    # Return a matrix of our results
+    return(cbind(theta_history, cost_history))
+}
+# Run the algorithm and save the history
+start_timing <- proc.time()[3]
+history <- gradient_descent(0.1, 100)
+print(sprintf("Training took %f seconds.", proc.time()[3] - start_timing))
+```
+
+Here is the plot of cost by epoch.
+
+```{r}
+plot(1, type="n", xlab="epoch", ylab="log cost", 
+    ylim=c(min(log(history[,4])), max(log(history[,4]))), 
+    xlim=c(0, nrow(history)))
+lines(x=1:nrow(history), y=log(history[,4]))
+```
+
+We can also compare our coefficients from `lm()` with those from gradient descent. They should be pretty close but slightly off.
+
+```{r}
+print(model$coefficients)
+tail(history, 1)[,1:3]
+```
+
+### The Normal Equation
+
+This section is really just a demonstration of a few matrix algebra functions in R. Here is the normal equation in action
+
+$$ \theta = (X^{T}X)^{-1}X^{T}y$$
+
+```{r}
+training_matrix <- data.matrix(training_data) # Convert the data to a matrix
+Xmat <- training_matrix[,1:3] # Select the X matrix
+Ymat <- training_matrix[,4] # Select the Y matrix or vector
+theta <- tcrossprod(solve(crossprod(Xmat)), Xmat) %*% Ymat
+print(theta)
+```
+
+Here is a breakdown of what R was doing, in order of when the functions were executed
+
+- `crossprod` performed $X^{T}X$. Since it was given only one argument, it transposed this matrix and then multiplied this transpose with the original $X$.
+- `solve` performed the matrix inversion. It's an R function for solving linear systems. If you only give it one argument, it assumes the right-hand side of the equation is an identity matrix, so it solves for $X^{-1}$ in $X \times X^{-1} = I$.
+- `tcrossprod` is the same as `crossprod` except it transpose the second argument instead of the first, such that `tcrossprod(A,B)` calculates $A \times B^{T}$.
+- `%*%` is just plain matrix multiplication, so `A %*% B` gives $A \times B$.

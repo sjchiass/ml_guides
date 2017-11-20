@@ -1,0 +1,132 @@
+---
+title: "Regularizaion"
+output:
+  pdf_document: default
+  html_document: default
+urlcolor: blue
+---
+<!-- Find latest version at https://github.com/sjchiass/rlang_coursera -->
+## A review of week 3, lecture 7 in R
+
+There isn't much to show for this lecture, so I'll just take the opportunity to show off some related things.
+
+### Ruining an Otherwise Good Model
+
+This is the `cars` dataset and a simple linear regression model.
+
+Andrew Ng defines overfitting as a model that (paraphrase) "fits the training data very well but fits other data very poorly". To give an example of overfitting, I'll split the `cars` dataset in two and overfit the training set only.
+
+```{r}
+model <- lm(dist ~ speed, cars) 
+plot(cars) 
+abline(model) 
+```
+
+### Detour: How to Sample Data and Subset It
+
+R's `sample()` function takes a sequence of numbers and returns `n` of the numbers, randomly selected. It only selects numbers, not rows, so you will have to then subset your data yourself. I know the `cars` dataset has 50 obsevations, so here is how I only select 10 of them.
+
+```{r}
+print(nrow(cars))
+sampled_cars <- sample(1:nrow(cars), 10) # Will pick 10 numbers from 1 to nrow(cars)
+print(sampled_cars)
+```
+
+With this vector of row numbers, it is now possible to subset the full `cars` dataset. This creates the training set.
+
+```{r}
+cars_train <- cars[sampled_cars,] # This uses square brackets to select the sampled rows
+str(cars_train) # This is just to show that the subset has worked
+```
+
+In order to select the non-training set, the same process cannot be repeated as-is. Instead, a workaround is necessary. As well as subsetting by indexes, R can also subset using logical vectors. This is what you have to do.
+
+```{r}
+# The message function is a way of directly writing to the R console
+message("This is a logical vector of the sample.")
+1:nrow(cars) %in% sampled_cars
+message("This is a logical vector of the indices NOT in the sample, the inverse of the above.")
+!(1:nrow(cars) %in% sampled_cars)
+message("The inverted logical vector can be used to subset as above")
+cars_nontrain <- cars[!(1:nrow(cars) %in% sampled_cars),]
+str(cars_nontrain)
+message("There is also a subset function that uses logicals to filter")
+cars_nontrain <- subset(cars, !(1:nrow(cars) %in% sampled_cars))
+str(cars_nontrain)
+```
+
+### Overfitting
+
+If the simple linear regression is run on the reduced dataset, it will still likely give something reasonable. With only an intercept and a slope, the model cannot overfit (yet).
+
+```{r}
+model <- lm(dist ~ speed, cars_train) 
+# Here is a trick to add some color to the graph
+plot(cars, col=(1:nrow(cars) %in% sampled_cars)+1) 
+abline(model) 
+```
+
+Depending on the sample drawn, the function described by the estimated model can overfit the data by a lot. This is usually due to the $speed^3$ and higher variables giving the model a chance to zig-zag back to fit points. Regularization can prevent this variable from dominating the rest by putting a penalty on it.
+
+```{r}
+# The R formula is supposed to be able to take squared, cubed, etc terms.
+# The same came be done by just creating these vectors.
+speed2 <- cars_train$speed^2
+speed3 <- cars_train$speed^3
+speed4 <- cars_train$speed^4
+model <- lm(dist ~ speed + speed2 + speed3 + speed4, cars_train) 
+plot(cars, col=(1:nrow(cars) %in% sampled_cars)+1) 
+# To graph the estimated model, a function must be defined for the curve function
+# x: sequence of x values, w: coefficients
+fit <- function(x, w){
+    no_na <- !is.na(w) # Some coefficients will be undefined
+    # The matrix function creates a column matrix populated by the intercept coefficient
+    # The sapply function feeds x into the other coefficients
+    # Finally, the no_na removes all columns with NAs
+    values <- (cbind(matrix(w[1], nrow=length(x)), 
+        sapply(2:(length(w)), function(n) w[n] * x^(n-1))))[,no_na]
+    # Return the row sums, which are the y values
+    return(rowSums(values))
+}
+lines(seq(1, 25, length=100), fit(seq(1, 25, length=100), model$coefficients), col="blue")
+```
+
+### Regularization with Normal Equation
+
+Here is Andrew Ng's implementation of regularization in the normal equation. I still get unsolvable singular matrices even with the lambda term. Adjust the variable `number` until you get a solution.
+
+You have to run this program a lot of times until you get a nice result like below. As in real life, sometime your data is just not enough; however, if you want a 5th order polynomial model with less fitting power, regularization will downgrade its power but still give a similar shape.
+
+```{r}
+# a function to try different regularization intensities
+# number is x up to the x^number power
+reg_eq <- function(number, lambda){
+    # Create the lambda matrix
+    lambda_matrix <- diag(number+1)
+    lambda_matrix[1,1] <- 0 # Remember to set the intercept's lambda to zero
+    training_matrix <- data.matrix(cars_train) # Convert the data to a matrix
+    Xmat <- matrix(0L, nrow=nrow(cars_train), ncol=number+1) # Create an empty matrix to start
+    # Populate X with 1, x, x^2, etc
+    for(i in 0:number){
+        Xmat[,i+1] <- cars_train[,1]^i
+    }
+    Ymat <- training_matrix[,2] # Select the Y matrix or vector
+    theta <- tcrossprod(solve(crossprod(Xmat) + lambda*lambda_matrix), Xmat) %*% Ymat
+    return(theta)
+}
+
+plot(cars, col=(1:nrow(cars) %in% sampled_cars)+1, ylim=c(-10, 125))
+
+lines(seq(1, 25, length=100), fit(seq(1, 25, length=100), model$coefficients), col="blue")
+lines(seq(1, 25, length=100), fit(seq(1, 25, length=100), reg_eq(4, 0.01)), col="limegreen")
+lines(seq(1, 25, length=100), fit(seq(1, 25, length=100), reg_eq(4, 0.1)), col="gold")
+lines(seq(1, 25, length=100), fit(seq(1, 25, length=100), reg_eq(4, 1.0)), col="hotpink")
+# Finally, an extreme example
+lines(seq(1, 25, length=100), fit(seq(1, 25, length=100), reg_eq(4, 100.0)), 
+    col="black", lty="dotted")
+
+for(i in c(0.01, 0.1, 1.0, 100.0)){
+    print(sprintf("With regularization %f", i))
+    print(reg_eq(4, i))   
+}
+```

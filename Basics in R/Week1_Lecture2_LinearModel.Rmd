@@ -1,0 +1,179 @@
+---
+title: "Linear Regression"
+output:
+  pdf_document: default
+  html_document: default
+urlcolor: blue
+---
+<!-- Find latest version at https://github.com/sjchiass/rlang_coursera -->
+## A review of week 1, lecture 2 in R
+
+### Further Reading
+- [ISLR videos: Linear Regression](https://www.youtube.com/watch?v=PsE9UqoWtS4)
+- ISLR book section 3.1: Simple Linear Regression
+
+### Model Representation
+
+The linear model is represented as a function $h(x)$ such that
+
+$$h_\theta (x) = \theta_0 + \theta_1 x$$
+
+and this is called the hypothesis function. The Cost function is the mean squared-error (MSE) 
+
+$$J(\theta_0,\theta_1) = \frac{1}{2m} \sum_{i=1}^m (h_\theta(x^{(i)}) - y^{(i)})^2 $$
+
+### Feature Scaling
+
+Working with gradient descent requires that you normalize or re-scale your inputs. This is a gradient descent thing. The algorithm uses derivatives of the cost function, and larger variables can "steal" some of the gradient, making the smaller variable train very slowly.
+
+The previous version of this guide did not re-scale its data, so the intercept coefficient did not converge. Its intercept gradients will always be much smaller than the slope gradients (the intercept is 1, speed is mean 15.4).
+
+```{r}
+norm_cars <- cars # Copy the cars dataset to a new variable
+norm_cars[,1] <- norm_cars[,1]-mean(norm_cars[,1]) # Subtract the mean
+norm_cars[,1] <- norm_cars[,1]/sd(norm_cars[,1]) # Then divide by the standard deviation
+# Repeat for the outputs
+norm_cars[,2] <- norm_cars[,2]-mean(norm_cars[,2])
+norm_cars[,2] <- norm_cars[,2]/sd(norm_cars[,2]) 
+```
+
+And just so we know, for reference, here is the solution to our new data.
+
+```{r}
+lm(norm_cars)
+```
+
+### Manually Testing Coefficients
+
+Suppose we decide to try $\theta_0 = -15$ and $\theta_1 = 5$ on the `cars` dataset, this is how you would implement these coefficients on the data and evaluate the value of the cost function.
+
+```{r}
+theta_0 <- 0.1 # Set values
+theta_1 <- 0.8
+plot(x=norm_cars$speed, y=norm_cars$dist) # Plot the cars variables explicitly
+abline(a=theta_0, b=theta_1) # With abline, a is the intercept and b is the slope
+cost <- 0 # Initialize a cost variable to zero
+for(i in 1:nrow(norm_cars)){
+    cost <- cost + (1 / 2*nrow(norm_cars)) * (theta_0 + theta_1 * norm_cars[i,1] - norm_cars[i,2])^2
+}
+print(cost) # Print the cost variable to the R console
+```
+
+Alternatively, you could also just write yourself a function to test coefficients more quickly
+
+```{r}
+# This is how a function is declared in R
+cost <- function(theta_0, theta_1){
+    cost <- 0
+    for(i in 1:nrow(norm_cars)){
+        cost <- cost + (1 / 2*nrow(norm_cars)) * (theta_0 + theta_1 * norm_cars[i,1] - norm_cars[i,2])^2
+    }
+    # Calculate the mean, in the formular this is 1/m
+    cost <- cost / nrow(norm_cars)
+    return(cost) # This value returned takes the place of the function in the code below
+}
+```
+
+```{r}
+# To format a string to be printed, you can use the sprintf function
+sprintf("Cost for theta_0 %0.2f and theta_1 %0.2f is %0.0f", 0, 1, cost(0, 1)) # The cost function fills in
+sprintf("Cost for theta_0 %0.2f and theta_1 %0.2f is %0.0f", 0, 0.5, cost(0, 0.5)) # the cost value in its place
+```
+
+### Graph of the Cost Function
+
+Here is how you'd get the classic 3D cost function graph associated with gradient descent. Notice that bad values of $\theta_1$ (the slope) have a greater impact on error than $\theta_0$ (the intercept).
+
+```{r}
+x <- seq(-1, 1, length=20) # Values of theta_0
+y <- seq(-1, 2.5, length=20) # Values of theta_1
+# The outer function is basically a way of applying a function to every combination of x and y
+z <- outer(x, y, cost) # We can re-use our function above to calculate z-axis values
+persp(x, y, z, theta = 45, phi = 15, zlim=c(1, 200), shade=0.05, 
+    col="lightblue", xlab = "theta_0", ylab = "theta_1", zlab = "Cost") 
+```
+
+### Gradient Descent
+
+Here is a simple but complete example of gradient descent with a linear regression model. Here is the calculus necessary.
+
+$$J(\theta_0, \theta_1) = \frac{1}{2m} \sum_{i=1}^m (h_\theta(x^i) - y^i)^2$$
+$$\frac{\partial J(\theta_0, \theta_1)}{\partial \theta_1} = \frac{1}{m} \sum_{i=1}^m \left((h_\theta(x^i) - y^i)*x^i\right)$$
+Looking more closely to these equations, $h_\theta(x^i)$ is really just the model output and $y^i$ is the true or target output. The expression $h_\theta(x^i) - y^i$ is often just called the delta $\Delta$. And so the update rules just become
+
+$$\theta_0 \gets \theta_0 - mean(lr * \Delta)$$
+$$\theta_0 \gets \theta_0 - mean(lr * \Delta \circ x)$$
+
+These rules cheat a bit by using vectors to make things neater. The $\circ$ operator signifies element-wise multiplication, which returns a series of amounts that can be averaged into a single value.
+
+The learning rate is a factor adjusting how much of the gradient to apply to the parameter during an update. Smaller values are likelier to cause convergence of the model, but are slower. Larger values can cause divergence.
+
+The method used here is known as batch learning, when the gradients are calculated for the entire sample and applied. Mini-batch training is more common in practice, and it usually uses stochastic gradient descent (SGD), the gradients calculated in succession for randomly selected shuffled mini-batches of the total sample.
+
+One batch of batch learning is known as an epoch: a complete pass-through of the dataset.
+
+```{r}
+# A modified version of our cost function above
+delta <- function(theta_0, theta_1){
+    # The sapply function is a faster and more compact for-loop
+    delta <- sapply(1:nrow(norm_cars), 
+        function(x) theta_0 + theta_1 * norm_cars[x,1] - norm_cars[x,2])
+    return(delta)
+}
+# A gradient descent function
+gradient_descent <- function(learning_rate, number_of_epochs){
+    # Let's pick these values as our starting points
+    theta_0 <- runif(1, -1, 1)
+    theta_1 <- runif(1, -1, 2.5)
+    # We're going to initialize histories of coefficient and cost values
+    theta_0_history <- theta_0
+    theta_1_history <- theta_1
+    cost_history <- mean(0.5*delta(theta_0, theta_1)^2)
+    for(epoch in 1:number_of_epochs){
+        delta <- delta(theta_0, theta_1)
+        # Update the intercept
+        theta_0 <- theta_0 - mean(learning_rate * delta)
+        # Update the slope
+        theta_1 <- theta_1 - mean(learning_rate * delta * norm_cars[,1]) # norm_cars[,1] is x
+        # Update the history
+        theta_0_history <- c(theta_0_history, theta_0)
+        theta_1_history <- c(theta_1_history, theta_1)
+        # Recalculate cost after the updates to the coefficients
+        cost_new <- mean(0.5*delta(theta_0, theta_1)^2)
+        cost_history <- c(cost_history, cost_new)
+    }
+    # Return a matrix of our results
+    return(cbind(theta_0_history, theta_1_history, cost_history))
+}
+# Run the algorithm and save the history
+history <- gradient_descent(0.1, 50)
+```
+
+A common plot is the cost or loss of the model through time.
+
+```{r}
+plot(1, type="n", xlab="epoch", ylab="log cost", 
+    ylim=c(min(history[,3]), max(history[,3])), 
+    xlim=c(0, nrow(history)))
+lines(x=1:nrow(history), y=history[,3])
+```
+
+Now that we've run the gradient descent, I'll show you some of its properties. First, here is the actual descent, as shown on a contour plot.
+
+```{r}
+x <- seq(-1, 1, length=100) # The seq function generates a sequence of numbers
+y <- seq(-1, 2.5, length=100) 
+z <- outer(x, y, cost) # Again we set up these values, using the cost function far above
+contour(x , y , z, drawlabels=FALSE, nlevels=20, xlab="theta_0", ylab="theta_1")
+lines(history[,1], history[,2], col="red")
+```
+
+Altenatively, we can plot each iteration onto a scatter plot to see the evolution of the coefficients.
+
+```{r}
+colors <- rainbow(nrow(history)) # This prepares a vector of colors of the same length as history
+plot(norm_cars)
+# The sapply function can be used to apply an arbitrary function
+# The invisible function prevents the results from being printed; however, they still appear on the plot.
+invisible(sapply(1:nrow(history), function(x) abline(a=history[x,1], b=history[x,2], col=colors[x])))
+```
