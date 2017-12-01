@@ -1,3 +1,7 @@
+# Statistical Learning
+
+This series of guides are mostly about scikit-learn and Jupyter.
+
 # Jupyter hotkeys
 
 ## While in edit mode
