@@ -1,0 +1,27 @@
+Name,Variety,Weight,Freshness
+Alfa,Spartan,161,Fresh
+Bravo,Gala,197,Fresh
+Charlie,Gala,105,Fresh
+Delta,Granny Smith,194,Spoiled
+Echo,Spartan,183,Spoiled
+Foxtrot,Fuji,115,Fresh
+Golf,Lobo,139,Spoiled
+Hotel,Spartan,167,Fresh
+India,Lobo,138,Spoiled
+Juliett,Gala,101,Fresh
+Kilo,McIntosh,114,Fresh
+Lima,McIntosh,127,Fresh
+Mike,Spartan,154,Spoiled
+November,Granny Smith,176,Fresh
+Oscar,McIntosh,101,Fresh
+Papa,Fuji,157,Fresh
+Quebec,Spartan,135,Fresh
+Romeo,Gala,180,Fresh
+Sierra,McIntosh,182,Fresh
+Tango,Granny Smith,182,Fresh
+Uniform,Granny Smith,182,Fresh
+Victor,Lobo,112,Fresh
+Whiskey,Spartan,107,Fresh
+X-ray,Lobo,124,Spoiled
+Yankee,Gala,142,Fresh
+Zulu,McIntosh,116,Fresh
