@@ -32,6 +32,10 @@ I finally try a genetic algorithm and have success. I try different configuratio
 
 I try the genetic algorithm on the Mountain-Car environment, which is alledgedly difficult for some RL models to solve. After some early failures, I got the genetic algorithm to work well with it.
 
+## An ioslides Presentation
+
+I've made a presentation [here](http://htmlpreview.github.io/?https://github.com/sjchiass/ml_guides/blob/master/Reinforcement%20Learning/Beginnings/Presentation.html#1).
+
 ## Further plans
 
 I either want to include more environments, or try my hand at a genuine RL model.
