@@ -4,6 +4,8 @@
 
 I've been interested in reinforcement learning, but I've found it too intimidating. Instead I've started with genetic algorithms. I'm happy to have solved [cart-pole](https://gym.openai.com/envs/CartPole-v1/) and [mountain-car](https://gym.openai.com/envs/MountainCar-v0/) with them. While genetic algorithms technically aren't reinforcement learning, I still find them pretty cool to play with.
 
+There's a reinforcement book by Sutton and Barto you may find helpful. They describe what reinforcement learning is about.
+
 Some vocabulary I've learned:
 * Agent: the algorithm playing the game
 * Environment: what we'd call the game, what the agent interacts with
@@ -11,7 +13,7 @@ Some vocabulary I've learned:
 * Reward: the positive or negative feedback the agent receives from the environment
 * Action: an action taken by the agent
 * State/observation: information from the environment to agent, which the agents responds to
-* Policy: the agent's strategy for using action $a$ when confronted with state $s$
+* Policy: the agent's strategy for using action `a` when confronted with state `s`
 * Value: how the agent values actions; genetic algorithms don't use value functions unlike true reinforcement learning models
 
 ## Jupyter Notebooks
@@ -28,9 +30,13 @@ This can be skipped. I tried to solve the games with my own ideas. I failed.
 
 I finally try a genetic algorithm and have success. I try different configurations to see the effect.
 
-### 4 Bonus
+### 4 MountainCar
 
 I try the genetic algorithm on the Mountain-Car environment, which is alledgedly difficult for some RL models to solve. After some early failures, I got the genetic algorithm to work well with it.
+
+### 5 Modifying Rewards
+
+I've noticed some of the cart pole agents drift off screen but still win the game. If I add a light penalty for straying off-center will they behave better? Yes.
 
 ## An ioslides Presentation
 
