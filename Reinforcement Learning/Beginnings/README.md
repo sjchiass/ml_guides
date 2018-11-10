@@ -62,9 +62,9 @@ This game has you trying to balance a pendulum upside down. The GA does alright.
 
 ### 7 Lunar Lander
 
-In this game you try to land a spacecraft on a lunar base. The GA does alright (140) but doesn't solve the game (200).
+In this game you try to land a spacecraft on a lunar base. The GA does alright (175 but doesn't solve the game (200).
 
-![Demo](./images/lander_100.gif)
+![Demo](./images/lander_200.gif)
 
 ### 8 Bipedal Bot
 
